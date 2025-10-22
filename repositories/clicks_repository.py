@@ -4,13 +4,16 @@ import numpy as np
 import pandas as pd
 from azure.cosmos import CosmosClient
 
-client = CosmosClient.from_connection_string(os.environ["CosmosDBConnection"])
-database = client.get_database_client("bookrec")
-global c
-c = database.get_container_client("clicks")
+
+def connect_to_db():
+    client = CosmosClient.from_connection_string(os.environ["CosmosDBConnection"])
+    database = client.get_database_client("bookrec")
+    c = database.get_container_client("clicks")
+    return c
 
 
 def get_all_clicks() -> pd.DataFrame:
+    c = connect_to_db()
     res = []
     query = f"SELECT DISTINCT c.user_id, c.session_id, c.click_article_id, c.click_timestamp FROM c"
     for doc in c.query_items(query=query, enable_cross_partition_query=True):
@@ -23,6 +26,7 @@ def get_all_clicks() -> pd.DataFrame:
 
 
 def get_clicked_articles_by_user(user_id) -> list:
+    c = connect_to_db()
     if not user_id:
         return []
     query = f"SELECT c.click_article_id FROM c WHERE c.user_id = {user_id}"
@@ -32,6 +36,7 @@ def get_clicked_articles_by_user(user_id) -> list:
 
 
 def get_last_clicked_by_user(user_id: int):
+    c = connect_to_db()
     if not user_id:
         return None
     query = """

@@ -1,15 +1,12 @@
 import json
 import logging
-
 import azure.functions as func
-
 from engines.hybrid_engine import HybridRecommendationEngine
 
 app = func.FunctionApp(http_auth_level=func.AuthLevel.ANONYMOUS)
-
 engine = HybridRecommendationEngine(n_recs = 5)
 
-@app.route(route="recommendations")
+@app.route(route="recommendations", methods=["get"])
 def recommendations(req: func.HttpRequest) -> func.HttpResponse:
     logging.info('Python HTTP trigger function processed a request!')
     try:

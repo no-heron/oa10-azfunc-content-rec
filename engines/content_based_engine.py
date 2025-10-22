@@ -1,3 +1,5 @@
+import os
+
 import numpy as np
 import pandas as pd
 
@@ -6,8 +8,12 @@ from sklearn.neighbors import NearestNeighbors
 
 import data_loading as db
 
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+embeddings_file = os.path.join(BASE_DIR, 'models', 'articles_embeddings.pickle')
+print(os.path.exists(embeddings_file))
+
 class ContentBasedRecommendationEngine:
-    def __init__(self, embeddings_file:str='models/articles_embeddings.pickle',
+    def __init__(self, embeddings_file:str=embeddings_file,
                  n_recs:int=5,
                  metric:str='cosine'):
         

@@ -1,8 +1,8 @@
 import numpy as np
 import pandas as pd
 
-import repositories.articles_repository as articles_db
-import repositories.clicks_repository as clicks_db
+from repositories import articles_repository as articles_db
+from repositories import clicks_repository as clicks_db
 
 
 def get_interactions():

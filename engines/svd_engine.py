@@ -1,24 +1,29 @@
+import os
+
 import numpy as np
-import pickle
 
 from surprise import Dataset, Reader, SVDpp
 
 import data_loading as db
 
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+model_file = os.path.join(BASE_DIR, 'models', 'svd', 'svdpp_model.pkl')
 
 class SVDRecommendationEngine:
 
-    def __init__(self, model_file:str='models/svd/svdpp_model.pkl'):
+    def __init__(self, model_file:str=model_file):
 
         self.model = self.build_train_model(model_file)
 
+        """
         with open(model_file, "rb") as f:
             artifact = pickle.load(f)
             self.model = artifact["model"]
+        """
         # user_inner_to_raw = artifact["user_inner_to_raw"]
         # item_inner_to_raw = artifact["item_inner_to_raw"]
 
-    def build_train_model(self, save_model_path="models/svd/svdpp_model.pkl"):
+    def build_train_model(self, save_model_path=model_file):
         train_triplets = db.get_user_article_affinity_ratings()
         reader = Reader(rating_scale=(1, 5))
         data = Dataset.load_from_df(train_triplets, reader)
@@ -42,11 +47,14 @@ class SVDRecommendationEngine:
             "item_inner_to_raw": trainset._inner2raw_id_items,
         }
 
+        """
         with open(save_model_path, "wb") as f:
             print("Saving model to:", f)
             pickle.dump(artifact, f)
+        """
         return model
     
+
     def recommend_for_user(self, user_id, candidates, N=None):
         known_candidates = []
         for iid in candidates:

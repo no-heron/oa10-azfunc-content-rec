@@ -3,8 +3,8 @@ import logging
 import numpy as np
 import pandas as pd
 
-from engines.content_based_engine import ContentBasedRecommendationEngine as ContentBased
-from engines.svd_engine import SVDRecommendationEngine as SVDEngine
+from .content_based_engine import ContentBasedRecommendationEngine as ContentBased
+from .svd_engine import SVDRecommendationEngine as SVDEngine
 
 import data_loading as db
 

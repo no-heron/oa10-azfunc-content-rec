@@ -7,7 +7,6 @@ azure-functions
 implicit
 numpy
 pandas
-pickle
 scikit-learn
 scipy
 surprise
