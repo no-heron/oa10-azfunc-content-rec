@@ -4,7 +4,6 @@
 
 azure-cosmos
 azure-functions
-implicit
 numpy
 pandas
 scikit-learn

@@ -1,29 +1,21 @@
 import os
+import pickle
 
 import numpy as np
-
 from surprise import Dataset, Reader, SVDpp
 
-import data_loading as db
+from . import data_loading as db
 
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-model_file = os.path.join(BASE_DIR, 'models', 'svd', 'svdpp_model.pkl')
+# from dotenv import load_dotenv
+# load_dotenv(override=True)
 
 class SVDRecommendationEngine:
+    
+    def __init__(self): #):
+        self.model_file = str(os.getenv("SVDppModelFile"))
+        self.model = self._build_train_model(self.model_file)
 
-    def __init__(self, model_file:str=model_file):
-
-        self.model = self.build_train_model(model_file)
-
-        """
-        with open(model_file, "rb") as f:
-            artifact = pickle.load(f)
-            self.model = artifact["model"]
-        """
-        # user_inner_to_raw = artifact["user_inner_to_raw"]
-        # item_inner_to_raw = artifact["item_inner_to_raw"]
-
-    def build_train_model(self, save_model_path=model_file):
+    def _build_train_model(self, save_model_path):
         train_triplets = db.get_user_article_affinity_ratings()
         reader = Reader(rating_scale=(1, 5))
         data = Dataset.load_from_df(train_triplets, reader)
@@ -47,15 +39,23 @@ class SVDRecommendationEngine:
             "item_inner_to_raw": trainset._inner2raw_id_items,
         }
 
-        """
         with open(save_model_path, "wb") as f:
             print("Saving model to:", f)
             pickle.dump(artifact, f)
-        """
+
         return model
     
 
+    def _load_model(self):
+        if not os.path.exists(self.model_file):
+            raise FileNotFoundError(f"Model file not found: {self.model_file}")
+
+        with open(self.model_file, "rb") as f:
+            model = pickle.load(f)
+        return model
+
     def recommend_for_user(self, user_id, candidates, N=None):
+            
         known_candidates = []
         for iid in candidates:
             try:

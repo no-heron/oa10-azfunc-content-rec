@@ -1,9 +1,11 @@
 import json
 import logging
 import azure.functions as func
-from engines.hybrid_engine import HybridRecommendationEngine
+
+from src.hybrid_engine import HybridRecommendationEngine
 
 app = func.FunctionApp(http_auth_level=func.AuthLevel.ANONYMOUS)
+
 engine = HybridRecommendationEngine(n_recs = 5)
 
 @app.route(route="recommendations", methods=["get"])
@@ -49,3 +51,7 @@ def recommendations(req: func.HttpRequest) -> func.HttpResponse:
             mimetype="application/json",
             status_code=400
         )
+
+@app.route(route="ping")
+def ping(req: func.HttpRequest) -> func.HttpResponse:
+    return func.HttpResponse("pong")

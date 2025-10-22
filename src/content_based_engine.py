@@ -4,34 +4,33 @@ import numpy as np
 import pandas as pd
 
 from sklearn.preprocessing import normalize
-from sklearn.neighbors import NearestNeighbors
 
-import data_loading as db
+from . import data_loading as db
 
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-embeddings_file = os.path.join(BASE_DIR, 'models', 'articles_embeddings.pickle')
-print(os.path.exists(embeddings_file))
+# from dotenv import load_dotenv
+# load_dotenv(override=True)
 
 class ContentBasedRecommendationEngine:
-    def __init__(self, embeddings_file:str=embeddings_file,
-                 n_recs:int=5,
-                 metric:str='cosine'):
-        
+    def __init__(self): # 
+        self.embeddings_file = os.getenv("ARTICLES_EMBEDDINGS_FILE")
+        self.embeddings = None
+    
+    def __load_embeddings(self):
         available_articles = (
             db.get_all_articles()['article_id']
             .sort_values()
             .to_list()
         )
-
-        embeddings = pd.read_pickle(embeddings_file)
+        embeddings = pd.read_pickle(str(self.embeddings_file))
         self.embeddings = embeddings[available_articles]
         # Normalize embeddings once for cosine similarity via dot product
         self.embeddings = normalize(self.embeddings, axis=1)
         self.article_ids = np.array(available_articles)
         self.article_ids_to_index = {aid: idx for idx, aid in enumerate(self.article_ids)}
-
     
     def recommend(self, article_id: int, n_recs=None):
+        if self.embeddings is None:
+            self.__load_embeddings()
         if article_id not in self.article_ids:
             return None
         

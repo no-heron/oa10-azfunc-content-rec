@@ -3,17 +3,17 @@ import logging
 import numpy as np
 import pandas as pd
 
-from .content_based_engine import ContentBasedRecommendationEngine as ContentBased
-from .svd_engine import SVDRecommendationEngine as SVDEngine
+from src.content_based_engine import ContentBasedRecommendationEngine as ContentBased
+from src.svd_engine import SVDRecommendationEngine as SVDEngine
 
-import data_loading as db
-
+import src.data_loading as db
 
 class HybridRecommendationEngine():
     def __init__(self, n_recs):
+
         self.data = db.get_articles_scores()
-        self.content_based_engine = ContentBased(n_recs=n_recs*10)
-        self.cf_engine = SVDEngine(model_file='models/svd/svdpp_model.pkl')
+        self.content_based_engine = ContentBased()
+        self.cf_engine = SVDEngine()
         self.n_recs = n_recs
 
         self.scores = ['freshness_score', 'popularity_score', 'cb_score', 'cf_score']
