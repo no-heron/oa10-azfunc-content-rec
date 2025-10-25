@@ -1,19 +1,19 @@
 import logging
+import os
 
 import numpy as np
 import pandas as pd
 
-from src.content_based_engine import ContentBasedRecommendationEngine as ContentBased
-from src.svd_engine import SVDRecommendationEngine as SVDEngine
-
-import src.data_loading as db
+import azure_helpers.data_loading as db
+from engines.content_based_engine import ContentBasedRecommendationEngine as ContentBased
+from engines.svd_engine import SVDRecommendationEngine as SVDEngine
 
 class HybridRecommendationEngine():
     def __init__(self, n_recs):
 
         self.data = db.get_articles_scores()
-        self.content_based_engine = ContentBased()
-        self.cf_engine = SVDEngine()
+        self.content_based_engine = ContentBased(embeddings_path=os.getenv("ArticlesEmbeddingsFile"), storage_mode='blob')
+        self.cf_engine = SVDEngine(model_path=os.getenv("SVDppModelFile"), storage_mode='blob')
         self.n_recs = n_recs
 
         self.scores = ['freshness_score', 'popularity_score', 'cb_score', 'cf_score']
@@ -23,7 +23,7 @@ class HybridRecommendationEngine():
             self.data.sort_values(by='popularity_score', ascending=False)
             .head(n_recs)
         )
-        return [(int(article_id), float(row.popularity_score)) for article_id, row in recs.iterrows()] # type: ignore
+        return [(str(article_id), float(row.popularity_score)) for article_id, row in recs.iterrows()] # type: ignore
 
     def __recommend_new(self, n_recs: int):
         recs = (
@@ -31,7 +31,7 @@ class HybridRecommendationEngine():
             .sort_values(by='freshness_score', ascending=False)
             .head(n_recs)
         )
-        return [(int(article_id), float(row.freshness_score)) for article_id, row in recs.iterrows()] # type: ignore
+        return [(str(article_id), float(row.freshness_score)) for article_id, row in recs.iterrows()] # type: ignore
  
     def __recommend_content_based(self, article_id):
         ct_based_recs = self.content_based_engine.recommend(article_id)
@@ -101,9 +101,10 @@ class HybridRecommendationEngine():
         else:
             logging.debug("No user_id was passed.")
 
-        
+        recs.fillna(0.0)
         weights = self.__get_weights(user_id)
         weights = {k: v for k, v in weights.items() if k in recs.columns}
+        
         w = np.array(list(weights.values()))
 
         if w.sum() > 0:

@@ -10,3 +10,6 @@ test
 !**/*.pkl
 *__pycache__
 test.py
+.env
+dataset/
+.ipynb

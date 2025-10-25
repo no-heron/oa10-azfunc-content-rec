@@ -3,7 +3,7 @@
 # azure-monitor-opentelemetry
 
 azure-cosmos
-azure-functions
+azure-storage-blob
 numpy
 pandas
 scikit-learn

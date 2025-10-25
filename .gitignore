@@ -1,4 +1,5 @@
-dataset/
+dataset/*.csv
+dataset/clicks/*.csv
 test.py
 
 start
