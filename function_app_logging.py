@@ -4,7 +4,7 @@ import os, sys, logging
 
 def get_logger(name, blob_conn_str=os.environ["AzureBlobStorageConnectionString"]):
     logger = logging.getLogger(name=name)
-    logger.setLevel(logging.DEBUG)
+    logger.setLevel(logging.INFO)
 
     # Stream handler (Log Stream)
     console = logging.StreamHandler(sys.stdout)

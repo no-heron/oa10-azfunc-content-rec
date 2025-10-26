@@ -1,11 +1,10 @@
-import logging
-from typing import Optional
+import logging, random
+from typing import Optional, List
 import numpy as np
 import pandas as pd
 
 import azure_helpers.cosmos_articles_repository as articles_db
 import azure_helpers.cosmos_clicks_repository as clicks_db
-
 
 # ---------------------------------------------------------------------
 # Core Interaction Functions
@@ -138,10 +137,13 @@ def get_articles_scores() -> pd.DataFrame:
         raise
 
 
+def get_random_users(n_users) -> List[int]:
+    all_users = clicks_db.get_users()
+    return random.sample(all_users, min(n_users, len(all_users)))
+
 # ---------------------------------------------------------------------
 # Pass-through Repository Accessors
 # ---------------------------------------------------------------------
-
 def get_clicked_articles_by_user(user_id: int):
     """Wrapper for clicks_repository.get_clicked_articles_by_user()."""
     if not isinstance(user_id, int):

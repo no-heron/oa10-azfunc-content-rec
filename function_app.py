@@ -54,26 +54,20 @@ def recommendations(req: func.HttpRequest) -> func.HttpResponse:
     try:
         # Try query parameters first
         user_id = req.params.get("user_id")
-        article_id = req.params.get("article_id")
 
         # Fallback to JSON body if not provided in URL
-        if not user_id or not article_id:
+        if not user_id:
             try:
                 req_body = req.get_json()
                 user_id = user_id or req_body.get("user_id")
-                article_id = article_id or req_body.get("article_id")
             except ValueError:
                 pass  # ignore JSON parse errors
-
         # Convert to int if provided
         user_id = int(user_id) if user_id is not None else None
-        article_id = int(article_id) if article_id is not None else None
-
-        logger.info(f"user_id={user_id}, article_id={article_id}")
+        logger.debug(f"user_id={user_id}")
 
         try:
-            recs = engine.recommend(user_id, article_id) # type: ignore
-            logger.info(recs)
+            recs = engine.recommend(user_id) # type: ignore
             return func.HttpResponse(
                 json.dumps(recs, ensure_ascii=False, indent=2),
                 mimetype="application/json",
@@ -93,59 +87,25 @@ def recommendations(req: func.HttpRequest) -> func.HttpResponse:
         )
 logger.info("Route '/recommendations' registered.")
 
-
-logger.debug("Initializing route user_profile.")
-@app.route(route="user_profile", methods=["GET"])
-def user_profiles(req: func.HttpRequest) -> func.HttpResponse:
-    logger.info("Processing request for user_profile endpoint.")
-
-    # Try to extract user_id from query parameters or JSON body
-    user_id = req.params.get("user_id")
-    if not user_id:
-        try:
-            req_body = req.get_json()
-            user_id = req_body.get("user_id")
-        except ValueError:
-            logger.warning("Invalid or missing JSON body in request.")
-            return func.HttpResponse(
-                "Invalid request body. Expected JSON with 'user_id'.",
-                status_code=400
-            )
-
-    # Validate user_id
+logger.debug("Initializing route random_users")
+@app.route(route="random_users", methods=["get"])
+def random_users(req: func.HttpRequest) -> func.HttpResponse:
+    logger.debug(f'random_users HTTP trigger was called.')
     try:
-        user_id = int(user_id)
-    except (TypeError, ValueError):
-        logger.warning(f"Invalid user_id provided: {user_id}")
-        return func.HttpResponse(
-            "Invalid 'user_id'. Must be an integer.",
-            status_code=400
-        )
+        # Try query parameters first
+        n_users = req.params.get("n_users", None)
+        n_users = int(n_users) if n_users else None
 
-    # Query Cosmos DB
-    try:
-        clicked = db.get_clicked_articles_by_user(user_id)
-        logger.info(f"Successfully retrieved click history for user_id={user_id}.")
-        return func.HttpResponse(
-            body=json.dumps({
-                "user_id": user_id,
-                "clicked_articles": clicked
-            }),
-            status_code=200,
-            mimetype="application/json"
-        )
+        # Validate n_users
+        if n_users is not None and not isinstance(n_users, int):
+            return func.HttpResponse("Invalid n_users parameter", status_code=400)
 
-    except CosmosHttpResponseError as e:
-        logger.error(f"Cosmos DB error while retrieving user {user_id}: {e}")
-        return func.HttpResponse(
-            "Database error occurred while retrieving user data.",
-            status_code=500
-        )
+        users = db.get_random_users(n_users) if n_users else db.get_random_users(10)
+        return func.HttpResponse(json.dumps(users), mimetype="application/json")
 
+    except ValueError:
+        return func.HttpResponse("n_users must be an integer", status_code=400)
     except Exception as e:
-        logger.exception(f"Unexpected error while processing user {user_id}: {e}")
-        return func.HttpResponse(
-            "Internal server error.",
-            status_code=500
-        )
-logger.info("Route '/user_profile' registered.")
+        logger.error(f"Error: {e}")
+        return func.HttpResponse("Internal server error", status_code=500)
+logger.debug("Route '/user_profile' registered.")

@@ -81,24 +81,15 @@ class HybridRecommendationEngine():
         w = w / w.sum()
         return dict(zip(keys, w))
 
-    def recommend(self, user_id: int | None = None, article_id: int | None = None):
-        logger.debug(f"Passed arguments: user_id={user_id}, article_id={article_id}")
+    def recommend(self, user_id: int | None = None):
+        logger.debug(f"Passed arguments: user_id={user_id}")
         recs = self.data.copy().sort_values(by='article_id', ascending=True)
-        if article_id is not None:
-            logger.debug(f"\nContent based recommendations based on article {article_id}:")
-        elif user_id is not None:
-            logger.debug(f"\nContent based recommendations based on last clicked content by user {user_id}:")
-            try:
-                article_id = db.get_last_clicked_by_user(int(user_id))
-            except:
-                logger.error(f"Could not retrieve data for user {str(user_id)}")
-            
-        if article_id:
-            cb = self.__recommend_content_based(article_id)
-            if cb is not None:
-                recs = recs.merge(cb, how='left', on='article_id')
-        else:
-            logger.debug("No article_id passed or found for specified user.")
+        
+        article_id = db.get_last_clicked_by_user(int(user_id)) if user_id else None # Default value in cases of no user provided or user has no history
+        content_based = self.__recommend_content_based(article_id) if article_id else None
+
+        if content_based is not None:
+            recs = recs.merge(content_based, how='left', on='article_id')
 
         if user_id and db.get_last_clicked_by_user(user_id):
             cf = pd.DataFrame(
@@ -110,9 +101,9 @@ class HybridRecommendationEngine():
             logger.debug("No user_id was passed.")
 
         recs.fillna(0.0)
+
         weights = self.__get_weights(user_id)
         weights = {k: v for k, v in weights.items() if k in recs.columns}
-        
         w = np.array(list(weights.values()))
 
         if w.sum() > 0:
