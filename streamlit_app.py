@@ -4,8 +4,8 @@ import random
 import streamlit as st
 import requests
 
-# API_URL = "https://oc10-bookrecs-hacad4gmd8bjdfdd.francecentral-01.azurewebsites.net/api/"
-API_URL = "http://localhost:7071/api"
+API_URL = "https://oc10-bookrecs-hacad4gmd8bjdfdd.francecentral-01.azurewebsites.net/api/"
+# API_URL = "http://localhost:7071/api"
 # ---------------------------
 # Streamlit Page Config
 # ---------------------------
@@ -20,15 +20,15 @@ st.markdown("<p style='text-align: center; color: gray;'>Enter an optional User 
 with st.container():
     col1, col2, col3 = st.columns([1, 2, 1])
     with col2:
+        st.write(f"Querying from: {API_URL}")
         # Fetch random users
         try:
             with st.spinner("Fetching users..."):
                 response = requests.get(f"{API_URL}/random_users")
                 response.raise_for_status()
-                random_users = response.json()
-                user_options = [str(a["id"]) for a in random_users]
-                # Create dropdown for article selection
-                user_id = st.selectbox("Select a user (optional)", ["None"] + user_options)
+                user_options = response.json()
+            # Create dropdown for article selection
+            user_id = st.selectbox("Select a user (optional)", user_options)
         except Exception as e:
             st.error(f"Failed to fetch users: {e}")
             user_id = st.text_input("User ID (optional, integers from 0 to 706)", placeholder="e.g. 123")

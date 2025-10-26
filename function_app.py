@@ -2,7 +2,6 @@ import os, sys
 sys.path.insert(0, os.path.dirname(__file__))
 
 import json
-import logging
 import azure.functions as func
 from azure.cosmos.exceptions import CosmosHttpResponseError
 from opencensus.ext.azure.log_exporter import AzureLogHandler

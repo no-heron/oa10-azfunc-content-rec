@@ -138,7 +138,7 @@ def get_articles_scores() -> pd.DataFrame:
 
 
 def get_random_users(n_users) -> List[int]:
-    all_users = clicks_db.get_users()
+    all_users = list(clicks_db.get_users())
     return random.sample(all_users, min(n_users, len(all_users)))
 
 # ---------------------------------------------------------------------
