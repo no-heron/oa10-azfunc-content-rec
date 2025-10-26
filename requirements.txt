@@ -3,9 +3,13 @@
 # azure-monitor-opentelemetry
 
 azure-cosmos
+azure-functions
 azure-storage-blob
-numpy
+numpy<2.0
+opencensus-ext-azure
+opencensus-ext-logging
+opencensus
 pandas
 scikit-learn
 scipy
-surprise
+scikit-surprise

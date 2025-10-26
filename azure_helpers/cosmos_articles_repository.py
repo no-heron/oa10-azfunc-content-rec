@@ -6,9 +6,6 @@ import numpy as np
 import pandas as pd
 from azure.cosmos import CosmosClient, exceptions
 
-from dotenv import load_dotenv
-load_dotenv(override=True)
-
 # ---- Configuration ----
 COSMOS_CONNECTION_STRING = os.getenv("CosmosDbConnectionString")
 DATABASE_NAME = "bookrec"

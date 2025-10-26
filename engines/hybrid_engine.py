@@ -8,17 +8,25 @@ import azure_helpers.data_loading as db
 from engines.content_based_engine import ContentBasedRecommendationEngine as ContentBased
 from engines.svd_engine import SVDRecommendationEngine as SVDEngine
 
+from function_app_logging import get_logger
+logger = get_logger("hybrid_engine")
+
 class HybridRecommendationEngine():
     def __init__(self, n_recs):
-
+        logger.debug("Loading popularity and freshness...")
         self.data = db.get_articles_scores()
+
+        logger.debug("Loading content-based engine...")
         self.content_based_engine = ContentBased(embeddings_path=os.getenv("ArticlesEmbeddingsFile"), storage_mode='blob')
+
+        logger.debug("Loading collaborative filtering SVD++ engine")
         self.cf_engine = SVDEngine(model_path=os.getenv("SVDppModelFile"), storage_mode='blob')
         self.n_recs = n_recs
 
         self.scores = ['freshness_score', 'popularity_score', 'cb_score', 'cf_score']
 
     def __recommend_popular(self, n_recs:int):
+        logger.debug(f'Issuing recommendations based on popularity...')
         recs = (
             self.data.sort_values(by='popularity_score', ascending=False)
             .head(n_recs)
@@ -26,6 +34,7 @@ class HybridRecommendationEngine():
         return [(str(article_id), float(row.popularity_score)) for article_id, row in recs.iterrows()] # type: ignore
 
     def __recommend_new(self, n_recs: int):
+        logger.debug(f'Issuing recommendations based freshness score...')
         recs = (
             self.data
             .sort_values(by='freshness_score', ascending=False)
@@ -34,6 +43,7 @@ class HybridRecommendationEngine():
         return [(str(article_id), float(row.freshness_score)) for article_id, row in recs.iterrows()] # type: ignore
  
     def __recommend_content_based(self, article_id):
+        logger.debug(f'Issuing recommendations based on article {article_id}')
         ct_based_recs = self.content_based_engine.recommend(article_id)
         if not ct_based_recs:
             return None
@@ -45,6 +55,7 @@ class HybridRecommendationEngine():
         return cb
 
     def __recommend_collaborative_filtering(self, user_id, n_recs=None):
+        logger.debug(f'Issuing recommendations based on collaborative-filtering scores for user {user_id}.')
         data = self.data
         seen = db.get_clicked_articles_by_user(user_id)
         # Exclude articles the user has already seen (index-based)
@@ -53,6 +64,7 @@ class HybridRecommendationEngine():
         return recs
 
     def __get_weights(self, user_id):
+        logger.debug('Calculating weights based on user profile...')
         keys = self.scores
         user_history = db.get_clicked_articles_by_user(user_id)
         history_size = len(user_history)
@@ -67,30 +79,26 @@ class HybridRecommendationEngine():
 
         w = np.array([fresh_pop/2, fresh_pop/2, cb_weight, cf_weight])
         w = w / w.sum()
-
         return dict(zip(keys, w))
 
-    def recommend(self, user_id=None, article_id=None):
-        logging.debug("Passed arguments: ", user_id, article_id)
+    def recommend(self, user_id: int | None = None, article_id: int | None = None):
+        logger.debug(f"Passed arguments: user_id={user_id}, article_id={article_id}")
         recs = self.data.copy().sort_values(by='article_id', ascending=True)
-        
-        logging.debug("Popularity & Freshness based recs df shape:", recs.shape)
-
         if article_id is not None:
-            logging.debug(f"\nContent based recommendations based on article {article_id}:")
+            logger.debug(f"\nContent based recommendations based on article {article_id}:")
         elif user_id is not None:
-            logging.debug(f"\nContent based recommendations based on last clicked content by user {user_id}:")
+            logger.debug(f"\nContent based recommendations based on last clicked content by user {user_id}:")
             try:
                 article_id = db.get_last_clicked_by_user(int(user_id))
             except:
-                logging.error(f"Could not retrieve data for user {user_id}")
+                logger.error(f"Could not retrieve data for user {str(user_id)}")
             
         if article_id:
             cb = self.__recommend_content_based(article_id)
             if cb is not None:
                 recs = recs.merge(cb, how='left', on='article_id')
         else:
-            logging.debug("No article_id passed or found for specified user.")
+            logger.debug("No article_id passed or found for specified user.")
 
         if user_id and db.get_last_clicked_by_user(user_id):
             cf = pd.DataFrame(
@@ -99,7 +107,7 @@ class HybridRecommendationEngine():
             ).sort_values(by='article_id', ascending=True)
             recs = recs.merge(cf, how='left', on='article_id')
         else:
-            logging.debug("No user_id was passed.")
+            logger.debug("No user_id was passed.")
 
         recs.fillna(0.0)
         weights = self.__get_weights(user_id)
